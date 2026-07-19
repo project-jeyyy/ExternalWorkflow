@@ -823,6 +823,9 @@ function populateClientDropdown() {
     names.map(n => `<option>${esc(n)}</option>`).join('');
 }
 
+// Replace this with your deployed Google Apps Script Web App URL
+const GATEWAY_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
 function submitRequest() {
   const owner  = document.getElementById('rf-owner').value;
   const client = document.getElementById('rf-client').value;
@@ -832,6 +835,7 @@ function submitRequest() {
   const overall= document.getElementById('rf-overall').value;
   const notes  = document.getElementById('rf-notes').value.trim();
   const err    = document.getElementById('rf-error');
+  const btn    = document.querySelector('.req-btn');
 
   if (!owner || !client || !column || !status) {
     err.style.display = 'block';
@@ -840,19 +844,42 @@ function submitRequest() {
   }
   err.style.display = 'none';
 
-  const title = encodeURIComponent(`[UPDATE] ${client} — ${column}`);
-  const body = encodeURIComponent(
-`**Account Owner:** ${owner}
-**Client Name:** ${client}
-**Column to Update:** ${column}
-**New Status:** ${status}
-**Issues / Flagged Transactions:** ${issue || '—'}
-**Overall Completion:** ${overall || 'No change'}
-**Additional Notes:** ${notes || '—'}`
-  );
+  if (GATEWAY_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    err.style.display = 'block';
+    err.textContent = 'Setup not complete — gateway URL not configured yet.';
+    return;
+  }
 
-  const url = `https://github.com/project-jeyyy/ExternalWorkflow/issues/new?template=client-update.yml&title=${title}&body=${body}`;
-  window.open(url, '_blank');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  fetch(GATEWAY_URL, {
+    method: 'POST',
+    body: JSON.stringify({ owner, client, column, status, issue, overall, notes }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      btn.textContent = '✅ Submitted!';
+      btn.style.background = '#15803d';
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        ['rf-owner','rf-client','rf-column','rf-status','rf-issue','rf-overall','rf-notes']
+          .forEach(id => { document.getElementById(id).value = ''; });
+        btn.disabled = false;
+        btn.textContent = 'Submit Request ↗';
+        btn.style.background = '';
+      }, 3000);
+    } else {
+      throw new Error(data.error || 'Unknown error');
+    }
+  })
+  .catch(() => {
+    err.style.display = 'block';
+    err.textContent = 'Something went wrong. Please try again.';
+    btn.disabled = false;
+    btn.textContent = 'Submit Request ↗';
+  });
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
