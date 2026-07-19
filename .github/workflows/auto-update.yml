@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   update:
-    if: contains(github.event.issue.labels.*.name, 'update-request')
+    if: startsWith(github.event.issue.title, '[UPDATE]')
     runs-on: ubuntu-latest
 
     steps:
