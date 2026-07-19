@@ -1,0 +1,95 @@
+name: Client Update Request
+description: Request a change to a client's status on the Hedgi Workflow Tracker
+title: "[UPDATE] "
+labels: ["update-request"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Client Update Request
+        Fill out the fields below and submit. Changes will be reflected on the live tracker once processed.
+
+  - type: dropdown
+    id: owner
+    attributes:
+      label: Account Owner
+      description: Who owns this account?
+      options:
+        - Jey
+        - Mildez
+        - Eugene
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: Client Name
+      description: Enter the exact client name as it appears on the tracker.
+      placeholder: e.g. Beau Sucre, LLC
+    validations:
+      required: true
+
+  - type: dropdown
+    id: column
+    attributes:
+      label: What Column Needs to Update?
+      description: Select the field you want to change.
+      options:
+        - Docs Received
+        - Categorization / Checks
+        - Reconciliation
+        - Journal Entries
+        - Ready for Review
+        - Manager Review (P&L)
+        - Client Notified
+        - Issues / Flagged Transactions
+        - Overall Status
+    validations:
+      required: true
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: New Status
+      description: Select the new value for the column above.
+      options:
+        - Complete
+        - In Progress
+        - Not Started
+        - Yes
+        - No
+        - N/A
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: Issues / Flagged Transactions
+      description: Describe any issue or flag to note on this account. Leave blank if none.
+      placeholder: e.g. AMEX reconciliation discrepancy — waiting on bank statement
+    validations:
+      required: false
+
+  - type: dropdown
+    id: overall
+    attributes:
+      label: Overall Completion
+      description: If this update reflects the overall completion status of this account, select below.
+      options:
+        - — (No change to overall status)
+        - Completed
+        - In Process
+        - Not Yet Started
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Anything else to add? (optional)
+    validations:
+      required: false
