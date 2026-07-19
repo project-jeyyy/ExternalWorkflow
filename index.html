@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hedgi Workflow Status - June 2026</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f1f5f9; color: #1e293b; font-size: 13px; }
+
+.header {
+  background: #0f2744;
+  color: white;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.3px; }
+.header .sub { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+.month-badge {
+  background: #2563eb;
+  color: white;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Dashboard */
+.dashboard-wrap { background: #0f2744; padding: 0 24px 16px; }
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding-bottom: 12px;
+}
+.stat-card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+  user-select: none;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  background: rgba(255,255,255,0.15);
+}
+.stat-card:active { transform: translateY(0); }
+.stat-card .lbl { font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.6px; }
+.stat-card .val { font-size: 32px; font-weight: 700; line-height: 1.1; margin: 4px 0 2px; }
+.stat-card .detail { font-size: 11px; opacity: 0.65; }
+.stat-card.green { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.15); }
+.stat-card.blue { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.15); }
+.stat-card.amber { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.15); }
+.stat-card.red { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); }
+.stat-card.purple { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.15); }
+
+/* Owner progress */
+.owner-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.owner-card {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+  user-select: none;
+}
+.owner-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.13);
+}
+.owner-card:active { transform: translateY(0); }
+.owner-card .name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.pbar-wrap { background: rgba(255,255,255,0.15); border-radius: 4px; height: 6px; margin: 2px 0; }
+.pbar-fill { height: 100%; border-radius: 4px; background: #22c55e; transition: width 0.4s; }
+.pstats { display: flex; gap: 12px; margin-top: 5px; font-size: 10px; opacity: 0.75; }
+
+/* Tabs */
+.tabs-nav {
+  display: flex;
+  background: white;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.15s;
+}
+.tab-btn:hover { color: #334155; }
+.tab-btn.active { color: #0f2744; border-bottom-color: #0f2744; }
+
+/* Panels */
+.tab-panel { display: none; padding: 16px 24px; }
+.tab-panel.active { display: block; }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.toolbar input[type="text"] {
+  flex: 1;
+  min-width: 160px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+}
+.toolbar input[type="text"]:focus { outline: none; border-color: #2563eb; }
+.toolbar select {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+}
+.count-pill {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* Table */
+.tbl-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid #e2e8f0; background: white; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead { position: sticky; top: 0; z-index: 2; }
+th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+  font-size: 11px;
+}
+td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #f8fafc; }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.b-complete    { background: #dcfce7; color: #15803d; }
+.b-inprogress  { background: #fef3c7; color: #b45309; }
+.b-notstarted  { background: #fee2e2; color: #b91c1c; }
+.b-review      { background: #dbeafe; color: #1d4ed8; }
+.b-ready       { background: #ede9fe; color: #6d28d9; }
+.b-yes         { background: #dcfce7; color: #15803d; }
+.b-no          { background: #fee2e2; color: #b91c1c; }
+.b-na          { background: #f1f5f9; color: #94a3b8; }
+
+/* Owner badges */
+.own-jey    { background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.own-mildez { background: #fce7f3; color: #9d174d; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.own-eugene { background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+
+/* Issues tab row colors */
+.row-resolved td   { background: #f0fdf4 !important; }
+.row-resolved:hover td { background: #dcfce7 !important; }
+.row-active td     { background: #fffbeb !important; }
+.row-active:hover td { background: #fef3c7 !important; }
+.row-compl-iss td  { background: #f0fdf4 !important; opacity: 0.9; }
+
+.iss-resolved { color: #15803d; font-weight: 700; }
+.iss-active   { color: #b45309; font-style: italic; }
+.canopy-link  { color: #2563eb; text-decoration: none; font-size: 10px; }
+.canopy-link:hover { text-decoration: underline; }
+.cmt-text     { color: #64748b; font-size: 11px; font-style: italic; }
+.no-rows      { text-align: center; padding: 32px; color: #94a3b8; }
+
+/* Legend */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px; color: #64748b; align-items: center; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="h1">Hedgi AI — Workflow Status Tracker</div>
+    <div class="sub">Philippines Team</div>
+  </div>
+  <span class="month-badge">June 2026</span>
+</div>
+
+<div class="dashboard-wrap">
+  <div class="dashboard" id="dashboard"></div>
+  <div class="owner-row" id="owner-row"></div>
+</div>
+
+<div class="tabs-nav">
+  <div class="tab-btn active" onclick="switchTab(0)">Overall Workflow</div>
+  <div class="tab-btn" onclick="switchTab(1)">Jey</div>
+  <div class="tab-btn" onclick="switchTab(2)">Mildez</div>
+  <div class="tab-btn" onclick="switchTab(3)">Eugene</div>
+  <div class="tab-btn" onclick="switchTab(4)">Issues / Flagged</div>
+</div>
+
+<div id="panel-0" class="tab-panel active"></div>
+<div id="panel-1" class="tab-panel"></div>
+<div id="panel-2" class="tab-panel"></div>
+<div id="panel-3" class="tab-panel"></div>
+<div id="panel-4" class="tab-panel"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const accounts = [
+  // client, docs, cat, rec, je, rdy, mgr, pl, cn, iss, own, cmt, link
+  ["5 Trades Inc.","Yes","Complete","In Progress","Complete","Yes","In Progress","No","No","Reconciliation Discrepancy","Eugene","","https://app.canopytax.com/#/client/6878190"],
+  ["ABI P&O, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/8401851"],
+  ["ASA Technologies, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","","https://app.canopytax.com/#/client/6931627"],
+  ["ATB 3, LLC","Yes","Complete","Complete","In Progress","","","","","QB POS Sales Report","Jey","","https://app.canopytax.com/#/client/3574438"],
+  ["Babylon International Market, Inc.","No","Complete","In Progress","In Progress","","","","","Choice BusChk 3033 Bank Stmt / Sales Report","Mildez","",""],
+  ["Backyard Investco I LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Jey","",""],
+  ["Backyard Partners LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Jey","",""],
+  ["Backyard SD 35 LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No June Transactions","Jey","","https://app.canopytax.com/#/client/5942779"],
+  ["Backyard SD Nile, LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Jey","","https://app.canopytax.com/#/client/5942779"],
+  ["Backyard SD Nola, LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Jey","","https://app.canopytax.com/#/client/5942779"],
+  ["Barron Enterprises Inc","Yes","Complete","Complete","Complete","No","","","","Please review ledger - Audit findings already sent, Jey","Eugene","","https://app.canopytax.com/#/client/3767422"],
+  ["Be Goods LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Mildez","","https://app.canopytax.com/#/client/3695196"],
+  ["Beau Sucre, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3703048"],
+  ["Beyer Pharmacy","No","Complete","In Progress","Complete","","","","","Bank Statements","Eugene","","https://app.canopytax.com/#/client/11142991"],
+  ["Biozenic, LLC","Yes","Complete","Complete","In Progress","","","","","Please review ledger - Audit findings already sent, Jey","Eugene","","https://app.canopytax.com/#/client/3562750"],
+  ["Birch Insurance Solutions, Inc","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Mildez","",""],
+  ["Bootin Bikinis, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/10313587"],
+  ["BRK, Inc.","Yes","Complete","Complete","Complete","Yes","","","","Adjusting Entries (Cash Receipts, if any)","Eugene","",""],
+  ["Buy Sell Rent San Diego","No","Not Started","Not Started","Complete","","","","","Bank Feeds - Bank Login in Canopy (Mildez has access)","Mildez","",""],
+  ["Catspaw Realty LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Jey","",""],
+  ["Chayim Veterinary Services, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","Reached out to client to reconnect","https://app.canopytax.com/#/client/11400871"],
+  ["Coast to Coast Souvenirs, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/6694767"],
+  ["Country Club Guest Home","Yes","Complete","In Progress","Complete","","","","","Chase Login in Canopy - Uploaded","Eugene","","https://app.canopytax.com/#/client/3703054"],
+  ["Crack Taco Coronado Inc","No","Complete","Complete","In Progress","","","","","Sales Report","Eugene","",""],
+  ["Creative Marketing Incentive Group, Inc.","No","In Progress","In Progress","In Progress","","","","","Bank Login in Canopy","Mildez","",""],
+  ["Cyra Design Build (Tax Prep Only)","Yes","Complete","In Progress","In Progress","","","","","Bank Statements","Mildez","","https://app.canopytax.com/#/client/4306301"],
+  ["Damman, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","",""],
+  ["Dave Huxtable, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","",""],
+  ["David Levi Jewelers & Repair, Inc.","No","Not Started","Not Started","In Progress","","","","","June not yet started","Eugene","",""],
+  ["DAWZ, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Eugene","",""],
+  ["Derman, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3703081"],
+  ["Diamond Daughters, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","",""],
+  ["Diamonds by Avi, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Mildez","","https://app.canopytax.com/#/client/3703101"],
+  ["Elizabeth Lazarus","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/4790390"],
+  ["Empire Garage Door, Inc.","Yes","Complete","In Progress","Complete","Yes","Complete","Yes","Yes","Discover reconciliation discrepancy","Mildez","","https://app.canopytax.com/#/client/3767450"],
+  ["Encinitas Karate, Inc.","No","Not Started","Not Started","In Progress","","","","","Kel has bank access","Mildez","","https://app.canopytax.com/#/client/3767451"],
+  ["Entila Corp","Yes","Complete","In Progress","Complete","","","","","Chase Login in Canopy - Uploaded","Eugene","","https://app.canopytax.com/#/client/3703109"],
+  ["F & M Auto Repair & Diesel Specialist","Yes","Complete","In Progress","In Progress","","","","","Kel has bank access","Eugene","",""],
+  ["Fentiman Enterprises DBA Seaside Papery","No","Complete","In Progress","Complete","","","","","Bank Statements","Mildez","","https://app.canopytax.com/#/client/7654470"],
+  ["Fernand S Lacayanga DMD, Inc.","Yes","Complete","In Progress","Complete","","","","","Review Checks / Bank Stmts","Mildez","","https://app.canopytax.com/#/client/3826507"],
+  ["FORUM Wealth Management, Inc.","Yes","Complete","In Progress","Complete","Yes","Complete","Yes","Yes","AMEX reconciliation discrepancy","Eugene","","https://app.canopytax.com/#/client/11572506"],
+  ["Frank Enterprises, LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Eugene","",""],
+  ["Gibson Wealth Management, Inc.","No","Complete","In Progress","Complete","","","","","Citi BusCard 9509 / Bank Statements","Jey","","https://app.canopytax.com/#/client/6655806"],
+  ["Guardtower Financial Services, LLC","Yes","Complete","In Progress","Complete","Yes","In Progress","","","Bank statement to recon","Mildez","","https://app.canopytax.com/#/client/6597454"],
+  ["Guidroz Rice Construction","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Mildez","","https://app.canopytax.com/#/client/9614857"],
+  ["Haddad Group Inc","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/11563763"],
+  ["HD Restaurant Group","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","",""],
+  ["Henrick Construction, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3700599"],
+  ["John Sadler's Auto Repair","Yes","Complete","In Progress","Complete","Yes","Complete","No","No","Bank Reconciliation Discrepancy","Jey","","https://app.canopytax.com/#/client/3765655"],
+  ["Joubin Nasseri Law Group, APC","Yes","Complete","In Progress","In Progress","","","","","For my GL review - Mildez","Mildez","","https://app.canopytax.com/#/client/8729925"],
+  ["Kirks Radiator & Auto Air Conditioning, Inc.","Yes","Complete","Complete","Complete","Yes","","","","","Eugene","",""],
+  ["La Jolla Florist, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Mildez","","https://app.canopytax.com/#/client/3767481"],
+  ["Lamys, Inc (Crack Taco Encinitas)","No","Complete","Complete","In Progress","","","","","Sales Report","Jey","",""],
+  ["Law Office of Karl Kuenhold, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","Bank Accounts - Re-Link Required","https://app.canopytax.com/#/client/11862667"],
+  ["Layvan, Inc.","Yes","Complete","In Progress","Complete","","","","","Bank Statements","Mildez","",""],
+  ["Ledge Ivy Properties, LLC","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Eugene","",""],
+  ["Legallink, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","LegalLink LLC - Re-Link Required",""],
+  ["Lourdes Mexican Food by the Sea, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3767484"],
+  ["Lourdes Mexican Food Cantina, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/4909499"],
+  ["Lourdes Mexican Food Express Togo, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3767485"],
+  ["Lourdes Mexican Food San Elijo, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3767486"],
+  ["Lourdes Mexican Food, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3703646"],
+  ["Lucky Panda Kids, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","",""],
+  ["Maisy Place","Yes","Complete","In Progress","Complete","","","","","For my GL review - Mildez","Mildez","","https://app.canopytax.com/#/client/3703134"],
+  ["Malek Law Group, APC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Mildez","","https://app.canopytax.com/#/client/9080594"],
+  ["Mexa Distributors, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","",""],
+  ["Michael Thomas Sommer","Yes","Complete","In Progress","Complete","Yes","In Progress","","","AMEX 1007 reconciliation discrepancy","Jey","",""],
+  ["Mike and George, Inc.","Yes","Complete","In Progress","Complete","Yes","In Progress","","","Neighborhood National 9742 Ongoing Reconciliation","Jey","",""],
+  ["Miller BDS, A Dental Corporation","Yes","Complete","In Progress","Complete","","","","","Bank Statements","Eugene","","https://app.canopytax.com/#/client/3700561"],
+  ["Miss Match Group, Inc.","Yes","Complete","Complete","In Progress","","","","","Amortization Schedule","Eugene","","https://app.canopytax.com/#/client/3703138"],
+  ["Momentra","Yes","Complete","In Progress","Complete","Yes","In Progress","","","","Eugene","",""],
+  ["NetOps Africa, LLC","Yes","Complete","In Progress","Complete","Yes","In Progress","","","","Mildez","",""],
+  ["PDDA Alliance","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","",""],
+  ["Pesto Italian Craft Kitchen","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/11116042"],
+  ["Quality Diamonds of San Diego, Inc.","Yes","Complete","In Progress","Complete","Yes","In Progress","","","AMEX 2006 - Bank Statement (Reach out to Cal)","Jey","",""],
+  ["Rancho Viejo Mex, Inc.","No","Complete","Complete","In Progress","","","","","Sales Report","Jey","","https://app.canopytax.com/#/client/3767517"],
+  ["Rua Michelle Realty LLC","No","Not Started","Not Started","Not Started","","","","","Plaid Disconnected","Mildez","",""],
+  ["Schindler Brokerage, LLC","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","","https://app.canopytax.com/#/client/5598854"],
+  ["SD Bay Rentals","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Mildez","Bank Feeds Uploaded - BofA Accounts",""],
+  ["SDCA ACU, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","","https://app.canopytax.com/#/client/3826647"],
+  ["Shawn Luke, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/5873499"],
+  ["Simplicity Enterprises","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Mildez","",""],
+  ["Siselectron USA, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Eugene","","https://app.canopytax.com/#/client/3700634"],
+  ["Skim Steezy, LLC","No","In Progress","In Progress","Complete","","","","","Bank login in Canopy","Mildez","",""],
+  ["Skyn Alchemy, Inc.","No","Complete","Complete","In Progress","","","","","Sales Report","Jey","",""],
+  ["South Bay Pioneers","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Mildez","",""],
+  ["Sphere Surveying & Mapping","Yes","Complete","In Progress","Complete","","","","","Kel has bank access","Mildez","",""],
+  ["Taco Shop Restaurant group","No","Complete","In Progress","In Progress","","","","","Bank Statement / Payroll Report","Eugene","",""],
+  ["TGRH2, Inc.","Yes","Complete","In Progress","Complete","Yes","In Progress","","","Citi reconciliation discrepancy","Mildez","",""],
+  ["TLC Medical Transport, LLC","No","Not Started","Not Started","In Progress","","","","","June not yet started","Jey","",""],
+  ["Torreblanca Wealth Management Corp","Yes","Complete","In Progress","Complete","Yes","In Progress","","","Bank Statements","Jey","Quarterly Client, adds transactions at quarter end","https://app.canopytax.com/#/client/6655798"],
+  ["Touma Group 2, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Eugene","","https://app.canopytax.com/#/client/5820382"],
+  ["Truck & SUV Center","Yes","Complete","Complete","In Progress","","","","","Sales Report","Jey","",""],
+  ["Unicorn Jewelry & Fine Gifts, Inc.","Yes","Complete","In Progress","In Progress","","","","","Kel has bank access","Eugene","",""],
+  ["United Design Group Inc","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Mildez","","https://app.canopytax.com/#/client/3700728"],
+  ["Upas Realty LLC","Yes","Complete","Complete","Complete","Yes","Complete","No","No","No","Eugene","",""],
+  ["US Jewelrybuyers, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","",""],
+  ["Vamos CRCS, Inc.","No","Not Started","Not Started","Not Started","","","","","Kel has bank access","Mildez","",""],
+  ["Versatile Surfaces, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3896258"],
+  ["Victory Auto Supply, Inc.","Yes","In Progress","In Progress","Complete","","","","","Check images sent. Kindly check.","Eugene","",""],
+  ["Vince Kattoula & Associates, LLC","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3700746"],
+  ["VMFS Group, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","",""],
+  ["Waheed & Sons, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","",""],
+  ["Way of Wellness Healthcare Inc","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/9990724"],
+  ["World Carpet & Tile, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Eugene","",""],
+  ["Yalcin Investment, LLC","Yes","Complete","In Progress","Complete","Yes","Complete","Yes","Yes","AMEX 2003 reconciliation discrepancy","Jey","","https://app.canopytax.com/#/client/3703365"],
+  ["Yudaman Inc","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/8283560"],
+  ["Z1 Parts, Inc.","Yes","Complete","Complete","Complete","Yes","In Progress","","","","Jey","",""],
+  ["Zanker Construction, Inc.","Yes","Complete","Complete","Complete","Yes","Complete","Yes","Yes","No","Jey","","https://app.canopytax.com/#/client/3700762"],
+];
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function idx(a) {
+  return { client:a[0], docs:a[1], cat:a[2], rec:a[3], je:a[4], rdy:a[5], mgr:a[6], pl:a[7], cn:a[8], iss:a[9], own:a[10], cmt:a[11], link:a[12] };
+}
+
+function getStatus(a) {
+  if (a.mgr === 'Complete') return 'Complete';
+  if (a.mgr === 'In Progress') return 'In Manager Review';
+  if (a.rdy === 'Yes') return 'Ready for Review';
+  if ([a.cat,a.rec,a.je].some(s => s === 'Not Started')) return 'Not Started';
+  return 'In Progress';
+}
+
+function isResolved(a) {
+  return a.mgr === 'Complete' && (a.iss === 'No' || a.iss.toLowerCase().startsWith('no june'));
+}
+
+function hasActiveIssue(a) {
+  return a.iss && a.iss !== 'No' && !a.iss.toLowerCase().startsWith('no june');
+}
+
+function statusBadge(status) {
+  const map = {
+    'Complete': 'b-complete',
+    'In Manager Review': 'b-review',
+    'Ready for Review': 'b-ready',
+    'In Progress': 'b-inprogress',
+    'Not Started': 'b-notstarted',
+  };
+  return `<span class="badge ${map[status]||'b-na'}">${status}</span>`;
+}
+
+function stepBadge(val) {
+  if (!val) return '<span class="badge b-na">-</span>';
+  if (val === 'Complete') return '<span class="badge b-complete">Complete</span>';
+  if (val === 'In Progress') return '<span class="badge b-inprogress">In Progress</span>';
+  if (val === 'Not Started') return '<span class="badge b-notstarted">Not Started</span>';
+  return `<span class="badge b-na">${val}</span>`;
+}
+
+function yesnoBadge(val) {
+  if (!val) return '<span class="badge b-na">-</span>';
+  if (val === 'Yes') return '<span class="badge b-yes">Yes</span>';
+  if (val === 'No') return '<span class="badge b-no">No</span>';
+  return `<span class="badge b-na">${val}</span>`;
+}
+
+function ownerBadge(own) {
+  const cls = own === 'Jey' ? 'own-jey' : own === 'Mildez' ? 'own-mildez' : 'own-eugene';
+  return `<span class="${cls}">${own}</span>`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const all = accounts.map(idx);
+  const total = all.length;
+  const complete = all.filter(a => a.mgr === 'Complete').length;
+  const inMgr = all.filter(a => a.mgr === 'In Progress').length;
+  const ready = all.filter(a => a.rdy === 'Yes' && !a.mgr).length;
+  const withIssue = all.filter(hasActiveIssue).length;
+  const pct = Math.round(complete/total*100);
+
+  document.getElementById('dashboard').innerHTML = `
+    <div class="stat-card" title="Show all accounts" onclick="drillDown('')"><div class="lbl">Total Accounts</div><div class="val">${total}</div><div class="detail">June 2026 &nbsp;&#8599;</div></div>
+    <div class="stat-card green" title="Show completed accounts" onclick="drillDown('Complete')"><div class="lbl">Complete</div><div class="val">${complete}</div><div class="detail">${pct}% of portfolio &nbsp;&#8599;</div></div>
+    <div class="stat-card blue" title="Show accounts in manager review" onclick="drillDown('In Manager Review')"><div class="lbl">In Manager Review</div><div class="val">${inMgr}</div><div class="detail">Submitted to Jake &nbsp;&#8599;</div></div>
+    <div class="stat-card purple" title="Show accounts ready for review" onclick="drillDown('Ready for Review')"><div class="lbl">Ready for Review</div><div class="val">${ready}</div><div class="detail">All steps done &nbsp;&#8599;</div></div>
+    <div class="stat-card amber" title="Go to Issues tab" onclick="drillDownIssues()"><div class="lbl">Active Issues / Flags</div><div class="val">${withIssue}</div><div class="detail">Needs attention &nbsp;&#8599;</div></div>
+  `;
+
+  // Owner progress
+  const owners = ['Jey','Mildez','Eugene'];
+  const html = owners.map(own => {
+    const oa = all.filter(a => a.own === own);
+    const oc = oa.filter(a => a.mgr === 'Complete').length;
+    const oi = oa.filter(hasActiveIssue).length;
+    const pct = oa.length ? Math.round(oc/oa.length*100) : 0;
+    return `
+      <div class="owner-card" title="Filter Overall tab by ${own}" onclick="drillDownOwner('${own}')">
+        <div class="name">${own} &nbsp;<span style="font-size:9px;opacity:0.6;font-weight:400;">&#8599; view accounts</span></div>
+        <div style="font-size:10px;opacity:0.6;">${oc}/${oa.length} complete &nbsp;·&nbsp; ${oi} active issues</div>
+        <div class="pbar-wrap" style="margin-top:6px;">
+          <div class="pbar-fill" style="width:${pct}%"></div>
+        </div>
+        <div style="font-size:10px;opacity:0.65;margin-top:3px;">${pct}% done</div>
+      </div>`;
+  }).join('');
+  document.getElementById('owner-row').innerHTML = html;
+}
+
+// ── TABLE PANEL ──────────────────────────────────────────────────────────────
+function renderTablePanel(panelId, filterFn, showOwner) {
+  const panel = document.getElementById(panelId);
+  const uid = panelId;
+
+  panel.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="srch-${uid}" placeholder="Search client..." oninput="filterTable('${uid}')">
+      <select id="sel-${uid}" onchange="filterTable('${uid}')">
+        <option value="">All Statuses</option>
+        <option>Complete</option>
+        <option>In Manager Review</option>
+        <option>Ready for Review</option>
+        <option>In Progress</option>
+        <option>Not Started</option>
+      </select>
+      ${showOwner ? `<select id="own-${uid}" onchange="filterTable('${uid}')">
+        <option value="">All Owners</option>
+        <option>Jey</option><option>Mildez</option><option>Eugene</option>
+      </select>` : ''}
+      <span class="count-pill" id="cnt-${uid}"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tbl-${uid}">
+        <thead><tr>
+          <th>#</th>
+          <th>Client</th>
+          ${showOwner ? '<th>Owner</th>' : ''}
+          <th>Docs</th>
+          <th>Cat / Checks</th>
+          <th>Recon</th>
+          <th>Journal Entries</th>
+          <th>Status</th>
+          <th>P&L</th>
+          <th>Client Notified</th>
+          <th>Issues / Flags</th>
+          <th>Comments</th>
+          <th>Canopy</th>
+        </tr></thead>
+        <tbody id="tbody-${uid}"></tbody>
+      </table>
+    </div>`;
+
+  const rows = accounts.map(idx).filter(filterFn || (()=>true));
+  window['_rows_'+uid] = rows;
+  renderRows(uid, rows, showOwner);
+}
+
+function renderRows(uid, rows, showOwner) {
+  const tbody = document.getElementById('tbody-'+uid);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${showOwner?13:12}" class="no-rows">No accounts match your filter.</td></tr>`;
+    document.getElementById('cnt-'+uid).textContent = '0 accounts';
+    return;
+  }
+  document.getElementById('cnt-'+uid).textContent = rows.length + ' account' + (rows.length===1?'':'s');
+  tbody.innerHTML = rows.map((a,i) => {
+    const status = getStatus(a);
+    const issHtml = a.iss
+      ? (isResolved(a)
+          ? `<span class="iss-resolved">&#10003; ${esc(a.iss)}</span>`
+          : `<span class="iss-active">${esc(a.iss)}</span>`)
+      : '<span style="color:#94a3b8">—</span>';
+    const linkHtml = a.link
+      ? `<a class="canopy-link" href="${a.link}" target="_blank">Open</a>`
+      : '<span style="color:#cbd5e1">—</span>';
+    return `<tr>
+      <td style="color:#94a3b8;font-size:11px;">${i+1}</td>
+      <td style="font-weight:500;min-width:180px;">${esc(a.client)}</td>
+      ${showOwner ? `<td>${ownerBadge(a.own)}</td>` : ''}
+      <td>${yesnoBadge(a.docs)}</td>
+      <td>${stepBadge(a.cat)}</td>
+      <td>${stepBadge(a.rec)}</td>
+      <td>${stepBadge(a.je)}</td>
+      <td>${statusBadge(status)}</td>
+      <td>${yesnoBadge(a.pl)}</td>
+      <td>${yesnoBadge(a.cn)}</td>
+      <td style="min-width:160px;">${issHtml}</td>
+      <td class="cmt-text" style="min-width:120px;">${esc(a.cmt)||'—'}</td>
+      <td>${linkHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(uid) {
+  const srch = (document.getElementById('srch-'+uid)||{}).value || '';
+  const sel = (document.getElementById('sel-'+uid)||{}).value || '';
+  const own = (document.getElementById('own-'+uid)||{}).value || '';
+  const allRows = window['_rows_'+uid] || [];
+  const filtered = allRows.filter(a => {
+    const matchText = !srch || a.client.toLowerCase().includes(srch.toLowerCase());
+    const matchSel = !sel || getStatus(a) === sel;
+    const matchOwn = !own || a.own === own;
+    return matchText && matchSel && matchOwn;
+  });
+  const showOwner = !!document.getElementById('own-'+uid);
+  renderRows(uid, filtered, showOwner);
+}
+
+// ── ISSUES TAB ───────────────────────────────────────────────────────────────
+function renderIssuesPanel(panelId) {
+  const panel = document.getElementById(panelId);
+  const uid = panelId;
+
+  // All accounts with something in the Issues column
+  const withIss = accounts.map(idx).filter(a => a.iss);
+
+  // Sort: active issues first, then complete-with-issue, then resolved (green)
+  withIss.sort((a,b) => {
+    const scoreA = isResolved(a) ? 2 : (a.mgr === 'Complete' ? 1 : 0);
+    const scoreB = isResolved(b) ? 2 : (b.mgr === 'Complete' ? 1 : 0);
+    if (scoreA !== scoreB) return scoreA - scoreB;
+    return a.client.localeCompare(b.client);
+  });
+
+  const active = withIss.filter(a => !isResolved(a) && a.mgr !== 'Complete').length;
+  const completeIss = withIss.filter(a => !isResolved(a) && a.mgr === 'Complete').length;
+  const resolved = withIss.filter(isResolved).length;
+
+  panel.innerHTML = `
+    <div class="legend">
+      <strong style="color:#334155;">Legend:</strong>
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:1px solid #86efac;"></div> Resolved — Manager Review Complete, no outstanding issues</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fffbeb;border:1px solid #fcd34d;"></div> Active — Issue pending resolution</div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="srch-${uid}" placeholder="Search client or issue..." oninput="filterIssues('${uid}')">
+      <select id="iown-${uid}" onchange="filterIssues('${uid}')">
+        <option value="">All Owners</option>
+        <option>Jey</option><option>Mildez</option><option>Eugene</option>
+      </select>
+      <select id="istat-${uid}" onchange="filterIssues('${uid}')">
+        <option value="">All Issue Statuses</option>
+        <option value="active">Active Issues</option>
+        <option value="resolved">Resolved</option>
+      </select>
+      <span class="count-pill" id="cnt-${uid}">${withIss.length} total &nbsp;|&nbsp; <span style="color:#b91c1c;">${active} active</span> &nbsp;|&nbsp; <span style="color:#15803d;">${resolved} resolved</span></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th>
+          <th>Client</th>
+          <th>Owner</th>
+          <th>Issues / Flagged Transactions</th>
+          <th>Manager Review</th>
+          <th>Resolution Status</th>
+          <th>Cat</th>
+          <th>Recon</th>
+          <th>JE</th>
+          <th>Canopy</th>
+        </tr></thead>
+        <tbody id="itbody-${uid}"></tbody>
+      </table>
+    </div>`;
+
+  window['_irows_'+uid] = withIss;
+  renderIssueRows(uid, withIss);
+}
+
+function renderIssueRows(uid, rows) {
+  const tbody = document.getElementById('itbody-'+uid);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="no-rows">No issues match your filter.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((a,i) => {
+    const resolved = isResolved(a);
+    const complIss = !resolved && a.mgr === 'Complete';
+    const rowCls = resolved ? 'row-resolved' : (complIss ? 'row-compl-iss' : 'row-active');
+
+    const resLabel = resolved
+      ? '<span class="badge b-complete">Resolved</span>'
+      : (complIss
+          ? '<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #86efac;">Complete (Noted)</span>'
+          : '<span class="badge b-inprogress">Active</span>');
+
+    const issHtml = resolved
+      ? `<span class="iss-resolved">&#10003; ${esc(a.iss)}</span>`
+      : `<span class="iss-active">${esc(a.iss)}</span>`;
+
+    const linkHtml = a.link
+      ? `<a class="canopy-link" href="${a.link}" target="_blank">Open</a>`
+      : '<span style="color:#cbd5e1">—</span>';
+
+    const mgrBadge = a.mgr === 'Complete'
+      ? '<span class="badge b-complete">Complete</span>'
+      : (a.mgr === 'In Progress'
+          ? '<span class="badge b-review">In Progress</span>'
+          : '<span class="badge b-na">Pending</span>');
+
+    return `<tr class="${rowCls}">
+      <td style="color:#94a3b8;font-size:11px;">${i+1}</td>
+      <td style="font-weight:500;min-width:160px;">${esc(a.client)}</td>
+      <td>${ownerBadge(a.own)}</td>
+      <td style="min-width:200px;">${issHtml}</td>
+      <td>${mgrBadge}</td>
+      <td>${resLabel}</td>
+      <td>${stepBadge(a.cat)}</td>
+      <td>${stepBadge(a.rec)}</td>
+      <td>${stepBadge(a.je)}</td>
+      <td>${linkHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterIssues(uid) {
+  const srch = (document.getElementById('srch-'+uid)||{}).value || '';
+  const own = (document.getElementById('iown-'+uid)||{}).value || '';
+  const stat = (document.getElementById('istat-'+uid)||{}).value || '';
+  const all = window['_irows_'+uid] || [];
+  const filtered = all.filter(a => {
+    const matchText = !srch || a.client.toLowerCase().includes(srch.toLowerCase()) || a.iss.toLowerCase().includes(srch.toLowerCase());
+    const matchOwn = !own || a.own === own;
+    const matchStat = !stat || (stat === 'resolved' ? isResolved(a) : !isResolved(a));
+    return matchText && matchOwn && matchStat;
+  });
+  renderIssueRows(uid, filtered);
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+}
+
+// ── DRILL-DOWN FROM DASHBOARD ─────────────────────────────────────────────────
+function drillDown(status) {
+  // Switch to Overall tab
+  switchTab(0);
+  // Set the status filter
+  const sel = document.getElementById('sel-panel-0');
+  if (sel) { sel.value = status; }
+  // Clear owner filter
+  const own = document.getElementById('own-panel-0');
+  if (own) { own.value = ''; }
+  // Clear search
+  const srch = document.getElementById('srch-panel-0');
+  if (srch) { srch.value = ''; }
+  filterTable('panel-0');
+  // Scroll to table
+  document.getElementById('panel-0').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function drillDownOwner(owner) {
+  switchTab(0);
+  const sel = document.getElementById('sel-panel-0');
+  if (sel) { sel.value = ''; }
+  const own = document.getElementById('own-panel-0');
+  if (own) { own.value = owner; }
+  const srch = document.getElementById('srch-panel-0');
+  if (srch) { srch.value = ''; }
+  filterTable('panel-0');
+  document.getElementById('panel-0').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function drillDownIssues() {
+  switchTab(4);
+  // Filter to active issues only
+  const istat = document.getElementById('istat-panel-4');
+  if (istat) { istat.value = 'active'; }
+  const iown = document.getElementById('iown-panel-4');
+  if (iown) { iown.value = ''; }
+  const srch = document.getElementById('srch-panel-4');
+  if (srch) { srch.value = ''; }
+  filterIssues('panel-4');
+  document.getElementById('panel-4').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderDashboard();
+renderTablePanel('panel-0', null, true);
+renderTablePanel('panel-1', a => a.own === 'Jey', false);
+renderTablePanel('panel-2', a => a.own === 'Mildez', false);
+renderTablePanel('panel-3', a => a.own === 'Eugene', false);
+renderIssuesPanel('panel-4');
+</script>
+</body>
+</html>
