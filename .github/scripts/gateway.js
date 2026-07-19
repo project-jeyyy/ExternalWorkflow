@@ -9,6 +9,13 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
 
+    if (!token) {
+      Logger.log('ERROR: GITHUB_TOKEN not found in Script Properties');
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, error: 'Token not configured' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     const title = `[UPDATE] ${data.client} — ${data.column}`;
     const body =
 `**Account Owner:** ${data.owner}
@@ -19,7 +26,7 @@ function doPost(e) {
 **Overall Completion:** ${data.overall || 'No change'}
 **Additional Notes:** ${data.notes || '—'}`;
 
-    UrlFetchApp.fetch('https://api.github.com/repos/project-jeyyy/ExternalWorkflow/issues', {
+    const response = UrlFetchApp.fetch('https://api.github.com/repos/project-jeyyy/ExternalWorkflow/issues', {
       method: 'post',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -30,11 +37,22 @@ function doPost(e) {
       muteHttpExceptions: true,
     });
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const status = response.getResponseCode();
+    const responseText = response.getContentText();
+    Logger.log(`GitHub API response: ${status} — ${responseText}`);
+
+    if (status === 201) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } else {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, error: `GitHub returned ${status}: ${responseText}` }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
   } catch (err) {
+    Logger.log(`ERROR: ${err.message}`);
     return ContentService
       .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -43,7 +61,8 @@ function doPost(e) {
 
 // Health check
 function doGet() {
+  const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
   return ContentService
-    .createTextOutput(JSON.stringify({ ok: true, service: 'Hedgi Gateway' }))
+    .createTextOutput(JSON.stringify({ ok: true, service: 'Hedgi Gateway', tokenSet: !!token }))
     .setMimeType(ContentService.MimeType.JSON);
 }
