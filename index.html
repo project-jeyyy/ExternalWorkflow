@@ -212,6 +212,17 @@ tbody tr:hover td { background: #f8fafc; }
 .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px; color: #64748b; align-items: center; }
 .legend-item { display: flex; align-items: center; gap: 5px; }
 .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* Request Update Form */
+.req-form { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; }
+.req-field { margin-bottom: 14px; }
+.req-label { display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; }
+.req-req { color: #b91c1c; }
+.req-input { width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: white; font-family: Arial, sans-serif; }
+.req-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+textarea.req-input { resize: vertical; }
+.req-btn { width: 100%; padding: 10px; background: #0f2744; color: white; border: none; border-radius: 5px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px; transition: background 0.15s; }
+.req-btn:hover { background: #1e3a5f; }
 </style>
 </head>
 <body>
@@ -235,6 +246,7 @@ tbody tr:hover td { background: #f8fafc; }
   <div class="tab-btn" onclick="switchTab(2)">Mildez</div>
   <div class="tab-btn" onclick="switchTab(3)">Eugene</div>
   <div class="tab-btn" onclick="switchTab(4)">Issues / Flagged</div>
+  <div class="tab-btn" onclick="switchTab(5)" style="color:#2563eb;">✏ Request Update</div>
 </div>
 
 <div id="panel-0" class="tab-panel active"></div>
@@ -242,6 +254,87 @@ tbody tr:hover td { background: #f8fafc; }
 <div id="panel-2" class="tab-panel"></div>
 <div id="panel-3" class="tab-panel"></div>
 <div id="panel-4" class="tab-panel"></div>
+<div id="panel-5" class="tab-panel">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="margin-bottom:20px;">
+      <h2 style="font-size:15px;font-weight:700;color:#0f2744;margin-bottom:4px;">Request a Client Update</h2>
+      <p style="font-size:12px;color:#64748b;">Fill out the form below and click <strong>Submit Request</strong>. It will open a pre-filled GitHub issue — just click <em>Submit new issue</em> there and Jey will apply the change.</p>
+    </div>
+
+    <div class="req-form">
+      <div class="req-field">
+        <label class="req-label">Account Owner <span class="req-req">*</span></label>
+        <select id="rf-owner" class="req-input">
+          <option value="">— Select —</option>
+          <option>Jey</option>
+          <option>Mildez</option>
+          <option>Eugene</option>
+        </select>
+      </div>
+
+      <div class="req-field">
+        <label class="req-label">Client Name <span class="req-req">*</span></label>
+        <select id="rf-client" class="req-input">
+          <option value="">— Select client —</option>
+        </select>
+      </div>
+
+      <div class="req-field">
+        <label class="req-label">Column to Update <span class="req-req">*</span></label>
+        <select id="rf-column" class="req-input">
+          <option value="">— Select column —</option>
+          <option>Docs Received</option>
+          <option>Categorization / Checks</option>
+          <option>Reconciliation</option>
+          <option>Journal Entries</option>
+          <option>Ready for Review</option>
+          <option>Manager Review</option>
+          <option>Client Notified</option>
+          <option>Issues / Flagged Transactions</option>
+          <option>Overall Status</option>
+        </select>
+      </div>
+
+      <div class="req-field">
+        <label class="req-label">New Status <span class="req-req">*</span></label>
+        <select id="rf-status" class="req-input">
+          <option value="">— Select status —</option>
+          <option>Complete</option>
+          <option>In Progress</option>
+          <option>Not Started</option>
+          <option>Yes</option>
+          <option>No</option>
+          <option>N/A</option>
+        </select>
+      </div>
+
+      <div class="req-field">
+        <label class="req-label">Issues / Flagged Transactions</label>
+        <textarea id="rf-issue" class="req-input" rows="2" placeholder="Describe any issue or flag (leave blank if none)"></textarea>
+      </div>
+
+      <div class="req-field">
+        <label class="req-label">Overall Completion</label>
+        <select id="rf-overall" class="req-input">
+          <option value="">— No change —</option>
+          <option>Completed</option>
+          <option>In Process</option>
+          <option>Not Yet Started</option>
+        </select>
+      </div>
+
+      <div class="req-field">
+        <label class="req-label">Additional Notes</label>
+        <textarea id="rf-notes" class="req-input" rows="2" placeholder="Anything else to add? (optional)"></textarea>
+      </div>
+
+      <div id="rf-error" style="display:none;color:#b91c1c;font-size:12px;margin-bottom:10px;padding:8px 10px;background:#fee2e2;border-radius:4px;"></div>
+
+      <button class="req-btn" onclick="submitRequest()">Submit Request ↗</button>
+      <p style="font-size:11px;color:#94a3b8;margin-top:8px;">You'll be taken to GitHub to confirm. Requires a free GitHub account.</p>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────────
@@ -721,6 +814,47 @@ function drillDownIssues() {
   document.getElementById('panel-4').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// ── REQUEST UPDATE FORM ───────────────────────────────────────────────────────
+function populateClientDropdown() {
+  const sel = document.getElementById('rf-client');
+  if (!sel) return;
+  const names = accounts.map(a => a[0]).sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">— Select client —</option>' +
+    names.map(n => `<option>${esc(n)}</option>`).join('');
+}
+
+function submitRequest() {
+  const owner  = document.getElementById('rf-owner').value;
+  const client = document.getElementById('rf-client').value;
+  const column = document.getElementById('rf-column').value;
+  const status = document.getElementById('rf-status').value;
+  const issue  = document.getElementById('rf-issue').value.trim();
+  const overall= document.getElementById('rf-overall').value;
+  const notes  = document.getElementById('rf-notes').value.trim();
+  const err    = document.getElementById('rf-error');
+
+  if (!owner || !client || !column || !status) {
+    err.style.display = 'block';
+    err.textContent = 'Please fill in all required fields (marked with *).';
+    return;
+  }
+  err.style.display = 'none';
+
+  const title = encodeURIComponent(`[UPDATE] ${client} — ${column}`);
+  const body = encodeURIComponent(
+`**Account Owner:** ${owner}
+**Client Name:** ${client}
+**Column to Update:** ${column}
+**New Status:** ${status}
+**Issues / Flagged Transactions:** ${issue || '—'}
+**Overall Completion:** ${overall || 'No change'}
+**Additional Notes:** ${notes || '—'}`
+  );
+
+  const url = `https://github.com/project-jeyyy/ExternalWorkflow/issues/new?template=client-update.yml&title=${title}&body=${body}`;
+  window.open(url, '_blank');
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 renderDashboard();
 renderTablePanel('panel-0', null, true);
@@ -728,6 +862,7 @@ renderTablePanel('panel-1', a => a.own === 'Jey', false);
 renderTablePanel('panel-2', a => a.own === 'Mildez', false);
 renderTablePanel('panel-3', a => a.own === 'Eugene', false);
 renderIssuesPanel('panel-4');
+populateClientDropdown();
 </script>
 </body>
 </html>
